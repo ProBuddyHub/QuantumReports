@@ -1,22 +1,3 @@
 [
-    {
-        "name": "Panala Aditya",
-        "student_id": "O220781",
-        "year": "E3",
-        "branch": "ECE",
-        "password": "scrypt:32768:8:1$y7str6gJM0WXBECB$50d1acb4607c65f61101512b657b122347080abd4755de8eb8acfd915c64e866019afa52e0b9b85cc185f35a85721dc94eb6fc43e94440e3aca0ac16951befc2",
-        "report1": "report1.pdf",
-        "report2": "Unit-5_DSP.pdf",
-        "report3": ""
-    },
-    {
-        "name": "Somu",
-        "student_id": "O221156",
-        "year": "E3",
-        "branch": "MECH",
-        "password": "scrypt:32768:8:1$ypXbDZQahrazWRCC$486163710c16add653da917dd126c86e98f1aa6b7fc839f3dfcb371df289a7b50cad046dcd30f11b11b9d74a295ab2f1fa68391f2c212eaded97615e4bad417b",
-        "report1": "",
-        "report2": "Unit-5_DSP.pdf",
-        "report3": ""
-    }
+    
 ]
