@@ -2,136 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quantum Reports</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     body {
-      background: url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e') no-repeat center center fixed;
-      background-size: cover;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
     }
 
     .glass {
       backdrop-filter: blur(12px);
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.92);
     }
 
-    .card:hover {
-      transform: translateY(-5px) scale(1.02);
-      transition: 0.3s;
+    .card {
+      transition: 0.25s;
     }
 
-    /* Mobile tap */
     .card:active {
       transform: scale(0.97);
     }
   </style>
 </head>
 
-<body class="min-h-screen p-4">
+<body class="min-h-screen text-gray-800">
 
-  <h1 class="text-2xl font-bold text-center mb-4 text-white">
-    Quantum Reports Dashboard
-  </h1>
+  <!-- HEADER -->
+  <div class="text-center py-4 text-white">
+    <h1 class="text-xl font-bold">📊 Quantum Reports</h1>
+  </div>
 
-  <!-- 🔍 SEARCH -->
-  <div class="glass p-3 rounded-xl mb-4">
-    <input id="searchInput" placeholder="Search by name or ID..."
-           class="w-full p-2 border rounded mb-2">
+  <!-- SEARCH + FILTER (STICKY) -->
+  <div class="sticky top-0 z-10 px-3 pb-3">
+    <div class="glass p-3 rounded-xl shadow-md">
 
-    <div class="flex gap-2">
-      <select id="yearFilter" class="p-2 border rounded w-1/2">
-        <option value="">All Years</option>
-        <option value="E2">E2</option>
-        <option value="E3">E3</option>
-        <option value="E4">E4</option>
-      </select>
+      <input id="searchInput"
+             placeholder="Search name or ID..."
+             class="w-full p-2 border rounded mb-2 text-sm">
 
-      <select id="branchFilter" class="p-2 border rounded w-1/2">
-        <option value="">All Branches</option>
-        <option value="CSE">CSE</option>
-        <option value="ECE">ECE</option>
-        <option value="EEE">EEE</option>
-        <option value="MECH">MECH</option>
-        <option value="CIVIL">CIVIL</option>
-      </select>
+      <div class="flex gap-2">
+        <select id="yearFilter" class="p-2 border rounded w-1/2 text-sm">
+          <option value="">All Years</option>
+          <option value="E2">E2</option>
+          <option value="E3">E3</option>
+          <option value="E4">E4</option>
+        </select>
+
+        <select id="branchFilter" class="p-2 border rounded w-1/2 text-sm">
+          <option value="">All Branches</option>
+          <option value="CSE">CSE</option>
+          <option value="ECE">ECE</option>
+          <option value="EEE">EEE</option>
+          <option value="MECH">MECH</option>
+          <option value="CIVIL">CIVIL</option>
+        </select>
+      </div>
+
     </div>
   </div>
 
-  <!-- 📋 CARDS -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- CARDS -->
+  <div class="px-3 pb-20 space-y-3">
 
     {% for entry in data %}
-    <div onclick="openEdit('{{ loop.index0 }}')" 
-         class="glass p-4 rounded-xl shadow card cursor-pointer student-card"
+    <div onclick="openEdit('{{ loop.index0 }}')"
+         class="glass p-4 rounded-xl shadow card student-card"
          data-name="{{ entry.name }}"
          data-id="{{ entry.student_id }}"
          data-year="{{ entry.year }}"
          data-branch="{{ entry.branch }}">
 
-      <h2 class="font-bold text-lg">{{ entry.name }}</h2>
-      <p class="text-sm">{{ entry.student_id }}</p>
-      <p class="text-xs text-gray-600">{{ entry.year }} - {{ entry.branch }}</p>
-
-      <!-- Status -->
-      <div class="mt-2 text-sm">
-        <p>R1: {{ '✅' if entry.report1 else '❌' }}</p>
-        <p>R2: {{ '✅' if entry.report2 else '❌' }}</p>
-        <p>R3: {{ '✅' if entry.report3 else '❌' }}</p>
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="font-semibold text-lg">{{ entry.name }}</h2>
+          <p class="text-xs text-gray-600">{{ entry.student_id }}</p>
+        </div>
+        <span class="text-xs bg-indigo-100 px-2 py-1 rounded">
+          {{ entry.year }} - {{ entry.branch }}
+        </span>
       </div>
 
-      <!-- Files (prevent click propagation) -->
-      <div class="mt-2 text-sm space-y-1" onclick="event.stopPropagation()">
+      <!-- STATUS -->
+      <div class="mt-3 flex justify-between text-sm">
+        <span>R1 {{ '✅' if entry.report1 else '❌' }}</span>
+        <span>R2 {{ '✅' if entry.report2 else '❌' }}</span>
+        <span>R3 {{ '✅' if entry.report3 else '❌' }}</span>
+      </div>
+
+      <!-- FILE LINKS -->
+      <div class="mt-3 space-y-1 text-sm">
         {% if entry.report1 %}
-          <a href="/uploads/{{ entry.student_id }}/{{ entry.report1 }}" class="text-blue-600 block">📄 {{ entry.report1 }}</a>
+          <a onclick="event.stopPropagation()"
+             href="/uploads/{{ entry.student_id }}/{{ entry.report1 }}"
+             class="text-blue-600 block">📄 {{ entry.report1 }}</a>
         {% endif %}
+
         {% if entry.report2 %}
-          <a href="/uploads/{{ entry.student_id }}/{{ entry.report2 }}" class="text-blue-600 block">📄 {{ entry.report2 }}</a>
+          <a onclick="event.stopPropagation()"
+             href="/uploads/{{ entry.student_id }}/{{ entry.report2 }}"
+             class="text-blue-600 block">📄 {{ entry.report2 }}</a>
         {% endif %}
+
         {% if entry.report3 %}
-          <a href="/uploads/{{ entry.student_id }}/{{ entry.report3 }}" class="text-blue-600 block">📄 {{ entry.report3 }}</a>
+          <a onclick="event.stopPropagation()"
+             href="/uploads/{{ entry.student_id }}/{{ entry.report3 }}"
+             class="text-blue-600 block">📄 {{ entry.report3 }}</a>
         {% endif %}
       </div>
 
       <!-- ZIP -->
-      <div onclick="event.stopPropagation()">
-        <a href="/download/{{ entry.student_id }}" 
-           class="text-green-600 text-sm block mt-2">
-           ⬇ Download All (ZIP)
-        </a>
-      </div>
+      <a onclick="event.stopPropagation()"
+         href="/download/{{ entry.student_id }}"
+         class="text-green-600 text-sm block mt-2">
+         ⬇ Download ZIP
+      </a>
 
     </div>
     {% endfor %}
 
   </div>
 
-  <!-- ➕ BUTTON -->
-  <button onclick="openModal()" 
-          class="fixed bottom-5 right-5 bg-indigo-600 text-white p-4 rounded-full shadow-lg">
+  <!-- FLOATING BUTTON -->
+  <button onclick="openModal()"
+          class="fixed bottom-6 right-6 bg-indigo-600 text-white w-14 h-14 rounded-full text-2xl shadow-lg">
     +
   </button>
 
-  <!-- 📤 SUBMIT MODAL -->
-  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="glass p-6 rounded-xl w-full max-w-md">
+  <!-- SUBMIT MODAL -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3">
+    <div class="glass p-5 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
 
-      <h2 class="text-xl font-bold mb-3">New Submission</h2>
+      <h2 class="text-lg font-bold mb-3">New Submission</h2>
 
       <form method="POST" action="/submit" enctype="multipart/form-data">
 
-        <input name="name" placeholder="Name" required class="w-full p-2 mb-2 border rounded">
-        <input name="student_id" placeholder="Student ID" required class="w-full p-2 mb-2 border rounded">
+        <input name="name" placeholder="Name" required class="w-full p-2 mb-2 border rounded text-sm">
+        <input name="student_id" placeholder="Student ID" required class="w-full p-2 mb-2 border rounded text-sm">
 
-        <select name="year" required class="w-full p-2 mb-2 border rounded">
-          <option value="">Select Year</option>
+        <select name="year" required class="w-full p-2 mb-2 border rounded text-sm">
+          <option value="">Year</option>
           <option value="E2">E2</option>
           <option value="E3">E3</option>
           <option value="E4">E4</option>
         </select>
 
-        <select name="branch" required class="w-full p-2 mb-2 border rounded">
-          <option value="">Select Branch</option>
+        <select name="branch" required class="w-full p-2 mb-2 border rounded text-sm">
+          <option value="">Branch</option>
           <option value="CSE">CSE</option>
           <option value="ECE">ECE</option>
           <option value="EEE">EEE</option>
@@ -139,61 +157,63 @@
           <option value="CIVIL">CIVIL</option>
         </select>
 
-        <input type="password" name="password" placeholder="Set Password" required class="w-full p-2 mb-2 border rounded">
+        <input type="password" name="password" placeholder="Set Password" required class="w-full p-2 mb-2 border rounded text-sm">
 
-        <input type="file" name="report1" accept=".pdf" class="mb-2">
-        <input type="file" name="report2" accept=".pdf" class="mb-2">
-        <input type="file" name="report3" accept=".pdf" class="mb-3">
-
-        <input type="hidden" name="overwrite" id="overwriteFlag">
+        <input type="file" name="report1" accept=".pdf" class="mb-2 text-sm">
+        <input type="file" name="report2" accept=".pdf" class="mb-2 text-sm">
+        <input type="file" name="report3" accept=".pdf" class="mb-3 text-sm">
 
         <button class="w-full bg-indigo-600 text-white p-2 rounded">
           Submit
         </button>
       </form>
 
-      <button onclick="closeModal()" class="mt-3 w-full text-red-500">Cancel</button>
+      <button onclick="closeModal()" class="mt-3 w-full text-red-500">
+        Cancel
+      </button>
+
     </div>
   </div>
 
-  <!-- ✏️ EDIT MODAL -->
-  <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="glass p-6 rounded-xl w-full max-w-md">
+  <!-- EDIT MODAL -->
+  <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3">
+    <div class="glass p-5 rounded-xl w-full max-w-md">
 
-      <h2 class="text-xl font-bold mb-3">Edit Submission</h2>
+      <h2 class="text-lg font-bold mb-3">Edit</h2>
 
-      <!-- ✅ UPDATE FORM -->
       <form method="POST" action="/edit" enctype="multipart/form-data">
 
         <input type="hidden" name="index" id="editIndex">
 
-        <input type="password" name="password" placeholder="Enter Password" required class="w-full p-2 mb-2 border rounded">
+        <input type="password" name="password" placeholder="Enter Password" required class="w-full p-2 mb-2 border rounded text-sm">
 
-        <input type="file" name="report1" accept=".pdf" class="mb-2">
-        <input type="file" name="report2" accept=".pdf" class="mb-2">
-        <input type="file" name="report3" accept=".pdf" class="mb-3">
+        <input type="file" name="report1" class="mb-2 text-sm">
+        <input type="file" name="report2" class="mb-2 text-sm">
+        <input type="file" name="report3" class="mb-3 text-sm">
 
         <button class="w-full bg-green-600 text-white p-2 rounded">
           Update
         </button>
       </form>
 
-      <!-- ✅ DELETE FORM (FIXED) -->
-      <form method="POST" action="/delete" class="mt-2">
+      <form method="POST" action="/delete">
         <input type="hidden" name="index" id="deleteIndex">
-        <input type="password" name="password" placeholder="Confirm Password" required class="w-full p-2 mb-2 border rounded">
+        <input type="hidden" name="password" id="deletePassword">
 
-        <button onclick="return confirm('Delete this entry permanently?')" 
-                class="w-full bg-red-600 text-white p-2 rounded">
+        <button onclick="return confirm('Delete permanently?')"
+                class="w-full bg-red-600 text-white p-2 rounded mt-2">
           Delete Entry
         </button>
       </form>
 
-      <button onclick="closeEdit()" class="mt-3 w-full text-red-500">Cancel</button>
+      <button onclick="closeEdit()" class="mt-3 w-full text-red-500">
+        Cancel
+      </button>
+
     </div>
   </div>
 
-  <!-- ⚙️ JS -->
+  <!-- JS -->
   <script>
     function openModal() {
       document.getElementById("modal").classList.remove("hidden");
@@ -213,6 +233,7 @@
       document.getElementById("editModal").classList.add("hidden");
     }
 
+    // FILTER
     function filterCards() {
       let search = document.getElementById("searchInput").value.toLowerCase();
       let year = document.getElementById("yearFilter").value;
