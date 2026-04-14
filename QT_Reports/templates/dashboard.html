@@ -13,12 +13,17 @@
 
     .glass {
       backdrop-filter: blur(12px);
-      background: rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.9);
     }
 
     .card:hover {
       transform: translateY(-5px) scale(1.02);
       transition: 0.3s;
+    }
+
+    /* Mobile tap */
+    .card:active {
+      transform: scale(0.97);
     }
   </style>
 </head>
@@ -29,9 +34,8 @@
     Quantum Reports Dashboard
   </h1>
 
-  <!-- 🔍 SEARCH + FILTER -->
+  <!-- 🔍 SEARCH -->
   <div class="glass p-3 rounded-xl mb-4">
-
     <input id="searchInput" placeholder="Search by name or ID..."
            class="w-full p-2 border rounded mb-2">
 
@@ -52,7 +56,6 @@
         <option value="CIVIL">CIVIL</option>
       </select>
     </div>
-
   </div>
 
   <!-- 📋 CARDS -->
@@ -77,8 +80,8 @@
         <p>R3: {{ '✅' if entry.report3 else '❌' }}</p>
       </div>
 
-      <!-- Files -->
-      <div class="mt-2 text-sm space-y-1">
+      <!-- Files (prevent click propagation) -->
+      <div class="mt-2 text-sm space-y-1" onclick="event.stopPropagation()">
         {% if entry.report1 %}
           <a href="/uploads/{{ entry.student_id }}/{{ entry.report1 }}" class="text-blue-600 block">📄 {{ entry.report1 }}</a>
         {% endif %}
@@ -91,10 +94,12 @@
       </div>
 
       <!-- ZIP -->
-      <a href="/download/{{ entry.student_id }}" 
-         class="text-green-600 text-sm block mt-2">
-         ⬇ Download All (ZIP)
-      </a>
+      <div onclick="event.stopPropagation()">
+        <a href="/download/{{ entry.student_id }}" 
+           class="text-green-600 text-sm block mt-2">
+           ⬇ Download All (ZIP)
+        </a>
+      </div>
 
     </div>
     {% endfor %}
@@ -118,7 +123,6 @@
         <input name="name" placeholder="Name" required class="w-full p-2 mb-2 border rounded">
         <input name="student_id" placeholder="Student ID" required class="w-full p-2 mb-2 border rounded">
 
-        <!-- ✅ FIXED -->
         <select name="year" required class="w-full p-2 mb-2 border rounded">
           <option value="">Select Year</option>
           <option value="E2">E2</option>
@@ -158,6 +162,7 @@
 
       <h2 class="text-xl font-bold mb-3">Edit Submission</h2>
 
+      <!-- ✅ UPDATE FORM -->
       <form method="POST" action="/edit" enctype="multipart/form-data">
 
         <input type="hidden" name="index" id="editIndex">
@@ -173,11 +178,16 @@
         </button>
       </form>
 
-      <button formaction="/delete" 
-        onclick="return confirm('Delete this entry permanently?')"
-        class="w-full bg-red-600 text-white p-2 rounded mt-2">
-        Delete Entry
-      </button>
+      <!-- ✅ DELETE FORM (FIXED) -->
+      <form method="POST" action="/delete" class="mt-2">
+        <input type="hidden" name="index" id="deleteIndex">
+        <input type="password" name="password" placeholder="Confirm Password" required class="w-full p-2 mb-2 border rounded">
+
+        <button onclick="return confirm('Delete this entry permanently?')" 
+                class="w-full bg-red-600 text-white p-2 rounded">
+          Delete Entry
+        </button>
+      </form>
 
       <button onclick="closeEdit()" class="mt-3 w-full text-red-500">Cancel</button>
     </div>
@@ -188,18 +198,21 @@
     function openModal() {
       document.getElementById("modal").classList.remove("hidden");
     }
+
     function closeModal() {
       document.getElementById("modal").classList.add("hidden");
     }
+
     function openEdit(index) {
       document.getElementById("editModal").classList.remove("hidden");
       document.getElementById("editIndex").value = index;
+      document.getElementById("deleteIndex").value = index;
     }
+
     function closeEdit() {
       document.getElementById("editModal").classList.add("hidden");
     }
 
-    // 🔍 FILTER
     function filterCards() {
       let search = document.getElementById("searchInput").value.toLowerCase();
       let year = document.getElementById("yearFilter").value;
@@ -223,7 +236,6 @@
     document.getElementById("searchInput").addEventListener("input", filterCards);
     document.getElementById("yearFilter").addEventListener("change", filterCards);
     document.getElementById("branchFilter").addEventListener("change", filterCards);
-    
   </script>
 
 </body>
