@@ -3,6 +3,7 @@ import json
 import zipfile
 from flask import Flask, render_template, request, redirect, send_from_directory, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
+import shutil  # add this at top if not present
 
 app = Flask(__name__)
 
@@ -142,6 +143,31 @@ def download_zip(student_id):
 
     return send_file(zip_path, as_attachment=True)
 
+
+@app.route("/delete", methods=["POST"])
+def delete():
+    index = int(request.form["index"])
+    password = request.form["password"]
+
+    data = load_data()
+    entry = data[index]
+
+    # Check password
+    if not check_password_hash(entry["password"], password):
+        return "Wrong password"
+
+    student_id = entry["student_id"]
+    folder_path = os.path.join(UPLOAD_FOLDER, student_id)
+
+    # Delete folder
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+
+    # Remove entry
+    data.pop(index)
+    save_data(data)
+
+    return redirect("/")
 
 if __name__ == "__main__":
     import os
