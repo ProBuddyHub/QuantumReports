@@ -21,7 +21,7 @@ cloudinary.config(
 
 app = Flask(__name__)
 
-DATABASE_URL = os.environ.get("postgresql://quantum_db_5uoq_user:OBLoB9DRWsdY9hw0YeT5qAwb3cirEI0h@dpg-d7f9qj67r5hc73bomrb0-a.oregon-postgres.render.com/quantum_db_5uoq")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 # =========================
