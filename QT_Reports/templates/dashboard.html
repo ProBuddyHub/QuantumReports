@@ -199,10 +199,14 @@
 
       <form method="POST" action="/delete">
         <input type="hidden" name="index" id="deleteIndex">
-        <input type="hidden" name="password" id="deletePassword">
-
+      
+        <input type="password" name="password"
+               placeholder="Enter Password again"
+               required
+               class="w-full p-2 mb-2 border rounded text-sm">
+      
         <button onclick="return confirm('Delete permanently?')"
-                class="w-full bg-red-600 text-white p-2 rounded mt-2">
+                class="w-full bg-red-600 text-white p-2 rounded">
           Delete Entry
         </button>
       </form>
@@ -258,6 +262,11 @@
     document.getElementById("searchInput").addEventListener("input", filterCards);
     document.getElementById("yearFilter").addEventListener("change", filterCards);
     document.getElementById("branchFilter").addEventListener("change", filterCards);
+
+    document.querySelector("form[action='/edit']").addEventListener("submit", function() {
+      document.querySelector("#deletePassword").value =
+        this.querySelector("input[name='password']").value;
+});
   </script>
 
 </body>
