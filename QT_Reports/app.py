@@ -10,6 +10,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 DATA_FILE = "data.json"
 
+# Ensure folders/files exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 if not os.path.exists(DATA_FILE):
@@ -17,6 +18,9 @@ if not os.path.exists(DATA_FILE):
         json.dump([], f)
 
 
+# =========================
+# UTIL FUNCTIONS
+# =========================
 def load_data():
     with open(DATA_FILE, "r") as f:
         return json.load(f)
@@ -27,16 +31,26 @@ def save_data(data):
         json.dump(data, f, indent=4)
 
 
+def normalize_id(student_id):
+    return student_id.strip().lower()
+
+
+# =========================
+# ROUTES
+# =========================
+
 @app.route("/")
 def dashboard():
     return render_template("dashboard.html", data=load_data())
 
 
-# ✅ SUBMIT
+# =========================
+# SUBMIT
+# =========================
 @app.route("/submit", methods=["POST"])
 def submit():
     name = request.form["name"]
-    student_id = request.form["student_id"]
+    student_id = normalize_id(request.form["student_id"])
     year = request.form["year"]
     branch = request.form["branch"]
     password = request.form["password"]
@@ -46,29 +60,34 @@ def submit():
 
     data = load_data()
 
-    # 🔍 Check duplicate
+    # 🔍 Check duplicate safely
+    existing_index = None
     for i, d in enumerate(data):
-        if d["student_id"] == student_id:
-
-            if overwrite != "yes":
-                return "DUPLICATE"
-
-            # 🔥 FULL DELETE (fixed)
-            old_folder = os.path.join(UPLOAD_FOLDER, student_id)
-            if os.path.exists(old_folder):
-                shutil.rmtree(old_folder)
-
-            data.pop(i)
+        if normalize_id(d["student_id"]) == student_id:
+            existing_index = i
             break
 
-    # 📁 Create folder
+    # 🚨 If duplicate found
+    if existing_index is not None:
+        if overwrite != "yes":
+            return "DUPLICATE"
+
+        # 🧹 Remove old folder completely
+        old_folder = os.path.join(UPLOAD_FOLDER, student_id)
+        if os.path.exists(old_folder):
+            shutil.rmtree(old_folder)
+
+        # Remove old entry
+        data.pop(existing_index)
+
+    # 📁 Create fresh folder
     student_folder = os.path.join(UPLOAD_FOLDER, student_id)
     os.makedirs(student_folder, exist_ok=True)
 
     def save_file(file):
         if file and file.filename.endswith(".pdf"):
-            path = os.path.join(student_folder, file.filename)
-            file.save(path)
+            filepath = os.path.join(student_folder, file.filename)
+            file.save(filepath)
             return file.filename
         return ""
 
@@ -76,6 +95,7 @@ def submit():
     report2 = save_file(request.files.get("report2"))
     report3 = save_file(request.files.get("report3"))
 
+    # ✅ Add new entry
     data.append({
         "name": name,
         "student_id": student_id,
@@ -88,39 +108,45 @@ def submit():
     })
 
     save_data(data)
+
     return redirect("/")
 
 
-# ✅ SERVE FILE
+# =========================
+# SERVE FILES
+# =========================
 @app.route("/uploads/<student_id>/<filename>")
 def uploaded_file(student_id, filename):
-    folder = os.path.join(UPLOAD_FOLDER, student_id)
-    if not os.path.exists(folder):
-        return "File not found"
-    return send_from_directory(folder, filename)
+    return send_from_directory(os.path.join(UPLOAD_FOLDER, student_id), filename)
 
 
-# ✅ EDIT
+# =========================
+# EDIT
+# =========================
 @app.route("/edit", methods=["POST"])
 def edit():
     index = int(request.form["index"])
     password = request.form["password"]
 
     data = load_data()
+
+    # Safety check
+    if index >= len(data):
+        return "Invalid entry"
+
     entry = data[index]
 
+    # 🔐 Password check
     if not check_password_hash(entry["password"], password):
         return "Wrong password"
 
-    student_folder = os.path.join(UPLOAD_FOLDER, entry["student_id"])
-
-    if not os.path.exists(student_folder):
-        os.makedirs(student_folder)
+    student_id = entry["student_id"]
+    student_folder = os.path.join(UPLOAD_FOLDER, student_id)
 
     def update_file(file, old):
         if file and file.filename.endswith(".pdf"):
-            path = os.path.join(student_folder, file.filename)
-            file.save(path)
+            filepath = os.path.join(student_folder, file.filename)
+            file.save(filepath)
             return file.filename
         return old
 
@@ -129,60 +155,46 @@ def edit():
     entry["report3"] = update_file(request.files.get("report3"), entry["report3"])
 
     save_data(data)
+
     return redirect("/")
 
 
-# ✅ DELETE FULL ENTRY
+# =========================
+# DELETE ENTRY
+# =========================
 @app.route("/delete", methods=["POST"])
 def delete():
     index = int(request.form["index"])
     password = request.form["password"]
 
     data = load_data()
+
+    if index >= len(data):
+        return "Invalid entry"
+
     entry = data[index]
 
+    # 🔐 Password check
     if not check_password_hash(entry["password"], password):
         return "Wrong password"
 
     student_id = entry["student_id"]
     folder_path = os.path.join(UPLOAD_FOLDER, student_id)
 
+    # 🧹 Remove folder
     if os.path.exists(folder_path):
         shutil.rmtree(folder_path)
 
+    # Remove entry
     data.pop(index)
     save_data(data)
 
     return redirect("/")
 
 
-# ✅ DELETE SINGLE FILE
-@app.route("/delete_file", methods=["POST"])
-def delete_file():
-    index = int(request.form["index"])
-    password = request.form["password"]
-    file_type = request.form["file"]
-
-    data = load_data()
-    entry = data[index]
-
-    if not check_password_hash(entry["password"], password):
-        return "Wrong password"
-
-    filename = entry.get(file_type)
-
-    if filename:
-        file_path = os.path.join(UPLOAD_FOLDER, entry["student_id"], filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    entry[file_type] = ""
-    save_data(data)
-
-    return redirect("/")
-
-
-# ✅ ZIP DOWNLOAD
+# =========================
+# ZIP DOWNLOAD
+# =========================
 @app.route("/download/<student_id>")
 def download_zip(student_id):
     student_folder = os.path.join(UPLOAD_FOLDER, student_id)
@@ -192,6 +204,10 @@ def download_zip(student_id):
 
     zip_path = os.path.join(UPLOAD_FOLDER, f"{student_id}.zip")
 
+    # 🔄 Always recreate zip (prevents corruption)
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
+
     with zipfile.ZipFile(zip_path, 'w') as zipf:
         for file in os.listdir(student_folder):
             file_path = os.path.join(student_folder, file)
@@ -200,7 +216,9 @@ def download_zip(student_id):
     return send_file(zip_path, as_attachment=True)
 
 
-# ✅ RUN (Render compatible)
+# =========================
+# RUN
+# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
