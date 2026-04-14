@@ -35,7 +35,7 @@
     <h1 class="text-xl font-bold">📊 Quantum Reports</h1>
   </div>
 
-  <!-- SEARCH + FILTER (STICKY) -->
+  <!-- SEARCH + FILTER -->
   <div class="sticky top-0 z-10 px-3 pb-3">
     <div class="glass p-3 rounded-xl shadow-md">
 
@@ -76,11 +76,11 @@
          data-branch="{{ entry.branch }}">
 
       <div class="flex justify-between items-center">
-        <div>
-          <h2 class="font-semibold text-lg">{{ entry.name }}</h2>
-          <p class="text-xs text-gray-600">{{ entry.student_id }}</p>
+        <div class="min-w-0">
+          <h2 class="font-semibold text-lg truncate">{{ entry.name }}</h2>
+          <p class="text-xs text-gray-600 truncate">{{ entry.student_id }}</p>
         </div>
-        <span class="text-xs bg-indigo-100 px-2 py-1 rounded">
+        <span class="text-xs bg-indigo-100 px-2 py-1 rounded whitespace-nowrap">
           {{ entry.year }} - {{ entry.branch }}
         </span>
       </div>
@@ -94,23 +94,37 @@
 
       <!-- FILE LINKS -->
       <div class="mt-3 space-y-1 text-sm">
+
         {% if entry.report1 %}
           <a onclick="event.stopPropagation()"
-             href="{{ entry.report1 }}" target="_blank"
-             class="text-blue-600 block">📄 {{ entry.report1 }}</a>
+             href="/uploads/{{ entry.student_id }}/{{ entry.report1 }}"
+             target="_blank"
+             class="text-blue-600 block truncate w-full"
+             title="{{ entry.report1 }}">
+             📄 {{ entry.report1 }}
+          </a>
         {% endif %}
 
         {% if entry.report2 %}
           <a onclick="event.stopPropagation()"
              href="/uploads/{{ entry.student_id }}/{{ entry.report2 }}"
-             class="text-blue-600 block">📄 {{ entry.report2 }}</a>
+             target="_blank"
+             class="text-blue-600 block truncate w-full"
+             title="{{ entry.report2 }}">
+             📄 {{ entry.report2 }}
+          </a>
         {% endif %}
 
         {% if entry.report3 %}
           <a onclick="event.stopPropagation()"
              href="/uploads/{{ entry.student_id }}/{{ entry.report3 }}"
-             class="text-blue-600 block">📄 {{ entry.report3 }}</a>
+             target="_blank"
+             class="text-blue-600 block truncate w-full"
+             title="{{ entry.report3 }}">
+             📄 {{ entry.report3 }}
+          </a>
         {% endif %}
+
       </div>
 
       <!-- ZIP -->
@@ -125,7 +139,7 @@
 
   </div>
 
-  <!-- FLOATING BUTTON -->
+  <!-- FLOAT BUTTON -->
   <button onclick="openModal()"
           class="fixed bottom-6 right-6 bg-indigo-600 text-white w-14 h-14 rounded-full text-2xl shadow-lg">
     +
@@ -182,6 +196,7 @@
 
       <h2 class="text-lg font-bold mb-3">Edit</h2>
 
+      <!-- UPDATE -->
       <form method="POST" action="/edit" enctype="multipart/form-data">
 
         <input type="hidden" name="index" id="editIndex">
@@ -197,14 +212,16 @@
         </button>
       </form>
 
+      <!-- DELETE -->
       <form method="POST" action="/delete">
         <input type="hidden" name="index" id="deleteIndex">
-      
+
         <input type="password" name="password"
+               id="deletePassword"
                placeholder="Enter Password again"
                required
                class="w-full p-2 mb-2 border rounded text-sm">
-      
+
         <button onclick="return confirm('Delete permanently?')"
                 class="w-full bg-red-600 text-white p-2 rounded">
           Delete Entry
@@ -262,11 +279,6 @@
     document.getElementById("searchInput").addEventListener("input", filterCards);
     document.getElementById("yearFilter").addEventListener("change", filterCards);
     document.getElementById("branchFilter").addEventListener("change", filterCards);
-
-    document.querySelector("form[action='/edit']").addEventListener("submit", function() {
-      document.querySelector("#deletePassword").value =
-        this.querySelector("input[name='password']").value;
-});
   </script>
 
 </body>
