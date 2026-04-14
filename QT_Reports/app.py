@@ -1,18 +1,27 @@
 import os
 import json
 import zipfile
-import shutil
-from flask import Flask, render_template, request, redirect, send_from_directory, send_file
+import requests
+from io import BytesIO
+from flask import Flask, render_template, request, redirect, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
+import cloudinary
+import cloudinary.uploader
+
+# =========================
+# CLOUDINARY CONFIG
+# =========================
+cloudinary.config(
+    cloud_name="dwddk1pji",
+    api_key="546872938222433",
+    api_secret="Ss6RyORJaaGefKMB1heNfljLnik"
+)
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "uploads"
 DATA_FILE = "data.json"
 
-# Ensure folders/files exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
+# Ensure data file exists
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, "w") as f:
         json.dump([], f)
@@ -33,6 +42,17 @@ def save_data(data):
 
 def normalize_id(student_id):
     return student_id.strip().lower()
+
+
+def upload_file(file):
+    if file and file.filename.endswith(".pdf"):
+        result = cloudinary.uploader.upload(
+            file,
+            resource_type="raw",
+            folder="quantum_reports"
+        )
+        return result["secure_url"]
+    return ""
 
 
 # =========================
@@ -57,45 +77,29 @@ def submit():
     overwrite = request.form.get("overwrite")
 
     hashed_password = generate_password_hash(password)
-
     data = load_data()
 
-    # 🔍 Check duplicate safely
+    # 🔍 Check duplicate
     existing_index = None
     for i, d in enumerate(data):
         if normalize_id(d["student_id"]) == student_id:
             existing_index = i
             break
 
-    # 🚨 If duplicate found
+    # 🚨 Duplicate handling
     if existing_index is not None:
         if overwrite != "yes":
             return "DUPLICATE"
 
-        # 🧹 Remove old folder completely
-        old_folder = os.path.join(UPLOAD_FOLDER, student_id)
-        if os.path.exists(old_folder):
-            shutil.rmtree(old_folder)
-
         # Remove old entry
         data.pop(existing_index)
 
-    # 📁 Create fresh folder
-    student_folder = os.path.join(UPLOAD_FOLDER, student_id)
-    os.makedirs(student_folder, exist_ok=True)
+    # 📤 Upload files to Cloudinary
+    report1 = upload_file(request.files.get("report1"))
+    report2 = upload_file(request.files.get("report2"))
+    report3 = upload_file(request.files.get("report3"))
 
-    def save_file(file):
-        if file and file.filename.endswith(".pdf"):
-            filepath = os.path.join(student_folder, file.filename)
-            file.save(filepath)
-            return file.filename
-        return ""
-
-    report1 = save_file(request.files.get("report1"))
-    report2 = save_file(request.files.get("report2"))
-    report3 = save_file(request.files.get("report3"))
-
-    # ✅ Add new entry
+    # ✅ Save entry
     data.append({
         "name": name,
         "student_id": student_id,
@@ -113,14 +117,6 @@ def submit():
 
 
 # =========================
-# SERVE FILES
-# =========================
-@app.route("/uploads/<student_id>/<filename>")
-def uploaded_file(student_id, filename):
-    return send_from_directory(os.path.join(UPLOAD_FOLDER, student_id), filename)
-
-
-# =========================
 # EDIT
 # =========================
 @app.route("/edit", methods=["POST"])
@@ -130,7 +126,6 @@ def edit():
 
     data = load_data()
 
-    # Safety check
     if index >= len(data):
         return "Invalid entry"
 
@@ -140,14 +135,9 @@ def edit():
     if not check_password_hash(entry["password"], password):
         return "Wrong password"
 
-    student_id = entry["student_id"]
-    student_folder = os.path.join(UPLOAD_FOLDER, student_id)
-
     def update_file(file, old):
         if file and file.filename.endswith(".pdf"):
-            filepath = os.path.join(student_folder, file.filename)
-            file.save(filepath)
-            return file.filename
+            return upload_file(file)
         return old
 
     entry["report1"] = update_file(request.files.get("report1"), entry["report1"])
@@ -178,14 +168,7 @@ def delete():
     if not check_password_hash(entry["password"], password):
         return "Wrong password"
 
-    student_id = entry["student_id"]
-    folder_path = os.path.join(UPLOAD_FOLDER, student_id)
-
-    # 🧹 Remove folder
-    if os.path.exists(folder_path):
-        shutil.rmtree(folder_path)
-
-    # Remove entry
+    # Remove entry only (Cloudinary files remain unless you delete manually)
     data.pop(index)
     save_data(data)
 
@@ -193,27 +176,30 @@ def delete():
 
 
 # =========================
-# ZIP DOWNLOAD
+# ZIP DOWNLOAD (Cloudinary)
 # =========================
 @app.route("/download/<student_id>")
 def download_zip(student_id):
-    student_folder = os.path.join(UPLOAD_FOLDER, student_id)
+    data = load_data()
 
-    if not os.path.exists(student_folder):
-        return "No files found"
+    entry = next((e for e in data if e["student_id"] == student_id), None)
 
-    zip_path = os.path.join(UPLOAD_FOLDER, f"{student_id}.zip")
+    if not entry:
+        return "Not found"
 
-    # 🔄 Always recreate zip (prevents corruption)
-    if os.path.exists(zip_path):
-        os.remove(zip_path)
+    memory_file = BytesIO()
 
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        for file in os.listdir(student_folder):
-            file_path = os.path.join(student_folder, file)
-            zipf.write(file_path, arcname=file)
+    with zipfile.ZipFile(memory_file, 'w') as zf:
+        for key in ["report1", "report2", "report3"]:
+            url = entry.get(key)
+            if url:
+                response = requests.get(url)
+                filename = url.split("/")[-1]
+                zf.writestr(filename, response.content)
 
-    return send_file(zip_path, as_attachment=True)
+    memory_file.seek(0)
+
+    return send_file(memory_file, download_name=f"{student_id}.zip", as_attachment=True)
 
 
 # =========================
