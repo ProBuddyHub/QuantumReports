@@ -96,7 +96,7 @@
       <div class="mt-3 space-y-1 text-sm">
         {% if entry.report1 %}
           <a onclick="event.stopPropagation()"
-             href="/uploads/{{ entry.student_id }}/{{ entry.report1 }}"
+             href="{{ entry.report1 }}" target="_blank"
              class="text-blue-600 block">📄 {{ entry.report1 }}</a>
         {% endif %}
 
